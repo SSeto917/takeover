@@ -2,7 +2,7 @@
   "name": "痛苦值副本",
   "short_name": "痛苦值",
   "description": "痛苦值累積、獎勵換算、森林與寶箱紀錄。",
-  "start_url": "./boss.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f7f1df",

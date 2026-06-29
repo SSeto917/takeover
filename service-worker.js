@@ -1,5 +1,6 @@
 const CACHE_NAME = "boss-pain-pwa-v1";
 const APP_SHELL = [
+  "./index.html",
   "./boss.html",
   "./forest.html",
   "./manifest.webmanifest",
