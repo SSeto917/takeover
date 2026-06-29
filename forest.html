@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>森林</title>
+    <meta name="theme-color" content="#f7f1df" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <style>
+      :root {
+        --bg: #fcfaf2;
+        --paper: #fffffb;
+        --ink: #2d2a26;
+        --line: #caa94d;
+        --accent: #6c8b76;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        padding: 24px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        color: var(--ink);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg);
+      }
+
+      button {
+        min-height: 42px;
+        border: 2px solid var(--ink);
+        border-radius: 8px;
+        padding: 0 16px;
+        color: var(--ink);
+        background: var(--paper);
+        font: inherit;
+        font-weight: 950;
+        cursor: pointer;
+        box-shadow: 0 3px 0 var(--ink);
+      }
+
+      button:active {
+        transform: translateY(2px);
+        box-shadow: 0 1px 0 var(--ink);
+      }
+
+      .forest-page {
+        display: grid;
+        gap: 14px;
+        width: min(980px, 100%);
+        margin: 0 auto;
+      }
+
+      .forest-header,
+      .forest-grid {
+        border: 2px solid var(--line);
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--paper) 94%, transparent);
+      }
+
+      .forest-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding: 16px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.7rem, 5vw, 2.45rem);
+      }
+
+      .forest-count {
+        margin: 4px 0 0;
+        font-weight: 900;
+        opacity: 0.72;
+      }
+
+      .forest-rule {
+        margin: 5px 0 0;
+        color: var(--ink);
+        font-size: 0.86rem;
+        font-weight: 900;
+        line-height: 1.35;
+        opacity: 0.74;
+      }
+
+      .forest-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 12px;
+        min-height: 120px;
+        padding: 12px;
+      }
+
+      .forest-card {
+        display: grid;
+        gap: 8px;
+        padding: 10px;
+        border: 2px solid color-mix(in srgb, var(--line) 58%, transparent);
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--paper) 88%, var(--line));
+      }
+
+      .forest-card.chunk {
+        background:
+          linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, var(--paper)), transparent 68%),
+          color-mix(in srgb, var(--paper) 88%, var(--line));
+      }
+
+      .forest-card.chunk.grove {
+        border-color: color-mix(in srgb, #39d98a 84%, var(--line));
+        box-shadow: 0 0 16px color-mix(in srgb, #39d98a 20%, transparent);
+      }
+
+      .forest-card.chunk.forest {
+        border-color: color-mix(in srgb, #a36cff 86%, var(--line));
+        box-shadow: 0 0 20px color-mix(in srgb, #a36cff 28%, transparent);
+      }
+
+      .forest-card.chunk.sea {
+        border-color: color-mix(in srgb, #ffd85a 92%, var(--line));
+        box-shadow:
+          0 0 0 1px color-mix(in srgb, #fff2a8 40%, transparent),
+          0 0 18px color-mix(in srgb, #ffd85a 42%, transparent),
+          0 0 34px color-mix(in srgb, #ffd85a 24%, transparent);
+      }
+
+      .forest-card canvas {
+        width: 100%;
+        aspect-ratio: 26 / 17;
+        border-radius: 10px;
+        background:
+          radial-gradient(circle at 50% 92%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 35%),
+          linear-gradient(180deg, color-mix(in srgb, var(--paper) 92%, transparent), color-mix(in srgb, var(--paper) 78%, transparent));
+      }
+
+      .forest-chunk-symbol {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 132px;
+        padding: 4px;
+        overflow: hidden;
+        border-radius: 10px;
+        border: 2px solid color-mix(in srgb, var(--line) 62%, transparent);
+        background:
+          radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 42%),
+          color-mix(in srgb, var(--paper) 78%, var(--line));
+      }
+
+      .forest-chunk-symbol canvas {
+        width: 100%;
+        max-height: 146px;
+        object-fit: contain;
+        filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 16%, transparent));
+      }
+
+      .forest-chunk-badge {
+        position: absolute;
+        right: 8px;
+        bottom: 8px;
+        display: inline-grid;
+        place-items: center;
+        min-width: 34px;
+        min-height: 28px;
+        padding: 0 8px;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+        background: color-mix(in srgb, var(--paper) 70%, transparent);
+        color: var(--ink);
+        font-size: 0.76rem;
+        font-weight: 1000;
+      }
+
+      .forest-meta {
+        display: grid;
+        gap: 2px;
+        font-size: 0.86rem;
+        font-weight: 900;
+      }
+
+      .forest-meta small {
+        opacity: 0.68;
+      }
+
+      .forest-empty {
+        padding: 18px;
+        opacity: 0.72;
+        font-weight: 900;
+      }
+
+      @media (max-width: 620px) {
+        body {
+          padding: 12px;
+        }
+
+        .forest-header {
+          grid-template-columns: 1fr;
+        }
+
+        .forest-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          padding: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="forest-page">
+      <header class="forest-header">
+        <div>
+          <h1>森林</h1>
+          <p id="forestCount" class="forest-count">0 棵樹</p>
+          <p class="forest-rule">痛苦值每增加 3600 點，自動增加 1 棵樹；100 棵樹整理成 1 個樹林，10 個樹林整理成 1 個森林，10 個森林整理成 1 個樹海。</p>
+        </div>
+        <a href="boss.html"><button type="button">返回</button></a>
+      </header>
+      <section id="forestGrid" class="forest-grid" aria-live="polite"></section>
+    </main>
+
+    <script>
+      const storageKey = "boss-pain-system-v1";
+      const startPain = 360000;
+
+      function int(value, fallback = 0) {
+        const parsed = Number.parseInt(value, 10);
+        return Number.isFinite(parsed) ? parsed : fallback;
+      }
+
+      function loadPain() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+          const now = Date.now();
+          const lastAt = Math.max(0, int(saved.lastAt, now));
+          const running = Boolean(saved.running);
+          const elapsed = running && lastAt && lastAt <= now ? Math.floor((now - lastAt) / 1000) : 0;
+          const pain = Math.max(startPain, int(saved.pain, startPain)) + elapsed;
+          if (elapsed > 0) {
+            saved.pain = pain;
+            saved.lastAt = lastAt + elapsed * 1000;
+            localStorage.setItem(storageKey, JSON.stringify(saved));
+          }
+          return pain;
+        } catch {
+          return startPain;
+        }
+      }
+
+      function drawTree(canvas, tree) {
+        const ctx = canvas.getContext("2d");
+        const width = canvas.width;
+        const height = canvas.height;
+        const seed = Number(tree.seed) || 1;
+        const leafColor = tree.leafColor || "#6c8b76";
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = "rgba(84, 63, 38, 0.18)";
+        ctx.beginPath();
+        ctx.ellipse(width * 0.5, height * 0.9, width * 0.28, height * 0.055, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        const trunkX = width * 0.5;
+        const trunkTop = height * 0.36;
+        const trunkBottom = height * 0.9;
+        const trunkWidth = width * 0.08;
+        const gradient = ctx.createLinearGradient(trunkX - trunkWidth, 0, trunkX + trunkWidth, 0);
+        gradient.addColorStop(0, "#5f3824");
+        gradient.addColorStop(0.5, "#986a43");
+        gradient.addColorStop(1, "#3f261a");
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.moveTo(trunkX - trunkWidth * 0.62, trunkBottom);
+        ctx.bezierCurveTo(trunkX - trunkWidth * 0.38, height * 0.66, trunkX - trunkWidth * 0.5, height * 0.45, trunkX - trunkWidth * 0.18, trunkTop);
+        ctx.bezierCurveTo(trunkX + trunkWidth * 0.45, height * 0.48, trunkX + trunkWidth * 0.38, height * 0.7, trunkX + trunkWidth * 0.68, trunkBottom);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#72492e";
+        for (let i = 0; i < 8; i += 1) {
+          const angle = -Math.PI / 2 + (i - 3.5) * 0.19;
+          const length = height * (0.18 + ((seed + i * 17) % 25) / 220);
+          const startY = trunkTop + i * 5;
+          ctx.lineWidth = Math.max(3, trunkWidth * (0.42 - i * 0.02));
+          ctx.beginPath();
+          ctx.moveTo(trunkX, startY);
+          ctx.quadraticCurveTo(
+            trunkX + Math.cos(angle) * length * 0.55,
+            startY + Math.sin(angle) * length * 0.42,
+            trunkX + Math.cos(angle) * length,
+            startY + Math.sin(angle) * length
+          );
+          ctx.stroke();
+        }
+
+        const density = Math.min(1, Math.max(0.25, tree.seconds / 3600));
+        const leaves = Math.floor(36 + density * 80);
+        for (let i = 0; i < leaves; i += 1) {
+          const n = Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453;
+          const r1 = n - Math.floor(n);
+          const r2 = Math.sin(n * 4.17) * 0.5 + 0.5;
+          const x = trunkX + (r1 - 0.5) * width * 0.55;
+          const y = height * 0.24 + r2 * height * 0.34;
+          const radius = 5 + ((seed + i * 11) % 11);
+          ctx.globalAlpha = 0.68 + ((i * 13) % 24) / 100;
+          ctx.fillStyle = leafColor;
+          ctx.beginPath();
+          ctx.ellipse(x, y, radius * 1.05, radius * 0.78, r1 * Math.PI, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function addTreeCard(grid, index, totalTrees) {
+        const card = document.createElement("article");
+        const canvas = document.createElement("canvas");
+        const meta = document.createElement("div");
+        const title = document.createElement("strong");
+        const detail = document.createElement("small");
+        card.className = "forest-card";
+        canvas.width = 260;
+        canvas.height = 170;
+        meta.className = "forest-meta";
+        title.textContent = `樹 #${totalTrees - index}`;
+        detail.textContent = "痛苦值 3600 點";
+        meta.append(title, detail);
+        card.append(canvas, meta);
+        grid.append(card);
+        drawTree(canvas, {
+          seed: totalTrees * 97 + index * 31,
+          leafColor: ["#6c8b76", "#4f8f69", "#7b9558", "#3f7f71"][index % 4],
+          seconds: 3600
+        });
+      }
+
+      function addChunkCard(grid, type, index, treeCount) {
+        const labels = { grove: "樹林", forest: "森林", sea: "樹海" };
+        const badges = { grove: "林", forest: "森", sea: "樹海" };
+        const card = document.createElement("article");
+        const preview = document.createElement("div");
+        const canvas = document.createElement("canvas");
+        const badge = document.createElement("span");
+        const meta = document.createElement("div");
+        const title = document.createElement("strong");
+        const detail = document.createElement("small");
+        card.className = `forest-card chunk ${type}`;
+        preview.className = "forest-chunk-symbol";
+        canvas.width = 260;
+        canvas.height = 170;
+        badge.className = "forest-chunk-badge";
+        badge.textContent = badges[type];
+        preview.append(canvas, badge);
+        meta.className = "forest-meta";
+        title.textContent = `${labels[type]} #${index + 1}`;
+        detail.textContent = `收納 ${treeCount.toLocaleString("zh-Hant")} 棵樹`;
+        meta.append(title, detail);
+        card.append(preview, meta);
+        grid.append(card);
+        drawTree(canvas, {
+          seed: treeCount * 41 + index * 101,
+          leafColor: type === "sea" ? "#c99a2e" : type === "forest" ? "#7d65b8" : "#4f9b68",
+          seconds: Math.min(3600, Math.max(900, treeCount * 12))
+        });
+      }
+
+      function render() {
+        const pain = loadPain();
+        const totalTrees = Math.floor(pain / 3600);
+        const seas = Math.floor(totalTrees / 10000);
+        const forests = Math.floor((totalTrees % 10000) / 1000);
+        const groves = Math.floor((totalTrees % 1000) / 100);
+        const trees = totalTrees % 100;
+        document.querySelector("#forestCount").textContent = `${totalTrees.toLocaleString("zh-Hant")} 棵樹　${groves.toLocaleString("zh-Hant")} 個樹林　${forests.toLocaleString("zh-Hant")} 個森林　${seas.toLocaleString("zh-Hant")} 個樹海`;
+        const grid = document.querySelector("#forestGrid");
+        grid.innerHTML = "";
+        if (!totalTrees) {
+          const empty = document.createElement("div");
+          empty.className = "forest-empty";
+          empty.textContent = "痛苦值累積到 3600 點後，第一棵樹會出現在這裡。";
+          grid.append(empty);
+          return;
+        }
+        for (let i = 0; i < seas; i += 1) addChunkCard(grid, "sea", i, 10000);
+        for (let i = 0; i < forests; i += 1) addChunkCard(grid, "forest", i, 1000);
+        for (let i = 0; i < groves; i += 1) addChunkCard(grid, "grove", i, 100);
+        for (let i = 0; i < trees; i += 1) addTreeCard(grid, i, totalTrees);
+      }
+
+      render();
+      setInterval(render, 1000);
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("service-worker.js").catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>

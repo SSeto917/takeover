@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>痛苦值副本</title>
+    <meta name="theme-color" content="#10231b" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <style>
+      :root {
+        --bg: #f7f1df;
+        --paper: #fffdf5;
+        --ink: #2f2921;
+        --muted: #766c5c;
+        --line: #b99b48;
+        --green: #497b5a;
+        --red: #a4493f;
+        --blue: #3f6f96;
+        --gold: #c99a2e;
+        --shadow: rgba(47, 41, 33, 0.14);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        padding: clamp(12px, 3vw, 24px);
+        color: var(--ink);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 20% 0%, rgba(73, 123, 90, 0.22), transparent 36%),
+          linear-gradient(135deg, #f7f1df, #efe0b9 52%, #d7c082);
+        -webkit-text-size-adjust: 100%;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        min-height: 42px;
+        border: 2px solid var(--ink);
+        border-radius: 8px;
+        padding: 0 14px;
+        color: var(--ink);
+        background: var(--paper);
+        font-weight: 950;
+        cursor: pointer;
+        box-shadow: 0 3px 0 var(--ink);
+      }
+
+      button:active {
+        transform: translateY(2px);
+        box-shadow: 0 1px 0 var(--ink);
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        border: 2px solid rgba(47, 41, 33, 0.72);
+        border-radius: 8px;
+        padding: 10px 12px;
+        color: var(--ink);
+        background: rgba(255, 253, 245, 0.92);
+        font-weight: 850;
+      }
+
+      textarea {
+        min-height: 180px;
+        resize: vertical;
+        line-height: 1.5;
+      }
+
+      .page {
+        display: grid;
+        gap: 14px;
+        width: min(980px, 100%);
+        margin: 0 auto;
+      }
+
+      .panel {
+        border: 2px solid var(--line);
+        border-radius: 12px;
+        background: rgba(255, 253, 245, 0.92);
+        box-shadow: 0 18px 44px var(--shadow);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: center;
+        padding: clamp(16px, 3vw, 22px);
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 7vw, 4rem);
+        line-height: 0.96;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: 1.05rem;
+      }
+
+      .subtitle {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 0.94rem;
+        font-weight: 850;
+        line-height: 1.45;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .forest-btn {
+        color: white;
+        border-color: #243d2d;
+        background: var(--green);
+      }
+
+      .start-btn[data-running="true"] {
+        color: white;
+        border-color: #5a211d;
+        background: var(--red);
+      }
+
+      .pain-card {
+        display: grid;
+        gap: 14px;
+        padding: clamp(16px, 3vw, 22px);
+      }
+
+      .pain-top {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: end;
+      }
+
+      .pain-label {
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 950;
+      }
+
+      .pain-value {
+        margin-top: 2px;
+        font-size: clamp(2.4rem, 11vw, 6rem);
+        font-weight: 1000;
+        line-height: 0.95;
+      }
+
+      .pain-dungeon {
+        display: grid;
+        gap: 3px;
+        min-width: 170px;
+        padding: 12px;
+        border: 2px solid rgba(47, 41, 33, 0.22);
+        border-radius: 10px;
+        background: rgba(73, 123, 90, 0.12);
+        font-weight: 950;
+      }
+
+      .pain-dungeon small {
+        color: var(--muted);
+      }
+
+      .progress {
+        height: 18px;
+        overflow: hidden;
+        border: 2px solid rgba(47, 41, 33, 0.7);
+        border-radius: 999px;
+        background: rgba(47, 41, 33, 0.12);
+      }
+
+      .progress i {
+        display: block;
+        width: var(--progress, 0%);
+        height: 100%;
+        background: linear-gradient(90deg, var(--green), var(--gold));
+      }
+
+      .stats-grid,
+      .reward-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .stat,
+      .reward {
+        display: grid;
+        gap: 6px;
+        min-height: 104px;
+        padding: 12px;
+        border: 2px solid rgba(47, 41, 33, 0.18);
+        border-radius: 10px;
+        background: rgba(255, 253, 245, 0.72);
+      }
+
+      .stat span,
+      .reward span,
+      .chest-item span {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 950;
+      }
+
+      .stat strong,
+      .reward strong {
+        font-size: clamp(1.2rem, 4vw, 1.7rem);
+        line-height: 1.05;
+      }
+
+      .reward-controls {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .reward-controls input {
+        min-width: 0;
+        padding: 8px 9px;
+      }
+
+      .reward-controls button {
+        min-height: 38px;
+        padding: 0 10px;
+        box-shadow: none;
+      }
+
+      .section {
+        display: grid;
+        gap: 12px;
+        padding: clamp(14px, 3vw, 18px);
+      }
+
+      .section-head {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+
+      .chest-list {
+        display: grid;
+        gap: 8px;
+        max-height: 280px;
+        overflow: auto;
+        padding-right: 2px;
+      }
+
+      .chest-item {
+        display: grid;
+        gap: 4px;
+        padding: 10px 12px;
+        border: 2px solid rgba(47, 41, 33, 0.16);
+        border-radius: 8px;
+        background: rgba(255, 253, 245, 0.7);
+        font-weight: 900;
+      }
+
+      .chest-item[data-rare="true"] {
+        border-color: rgba(201, 154, 46, 0.86);
+        background: rgba(255, 239, 178, 0.74);
+      }
+
+      .quote-editor,
+      .firebase-editor {
+        display: none;
+        gap: 10px;
+      }
+
+      .quote-editor[data-open="true"],
+      .firebase-editor[data-open="true"] {
+        display: grid;
+      }
+
+      .notice {
+        min-height: 28px;
+        color: var(--green);
+        font-weight: 950;
+      }
+
+      @media (max-width: 760px) {
+        .hero,
+        .pain-top {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-actions {
+          justify-content: stretch;
+        }
+
+        .hero-actions button,
+        .hero-actions a,
+        .hero-actions a button {
+          width: 100%;
+        }
+
+        .stats-grid,
+        .reward-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 440px) {
+        .stats-grid,
+        .reward-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero panel">
+        <div>
+          <h1>痛苦值副本</h1>
+          <p class="subtitle">副本與怪物統一為「痛苦值」。按開始後痛苦值每秒 +1，從 360000 開始累積；獎勵會依總痛苦值自動換算，不扣除痛苦值本身。</p>
+        </div>
+        <div class="hero-actions">
+          <button id="startToggle" class="start-btn" type="button">開始</button>
+          <button id="quoteToggle" type="button">編輯名言金句</button>
+          <button id="firebaseToggle" type="button">Firebase</button>
+          <a href="forest.html"><button class="forest-btn" type="button">森林</button></a>
+        </div>
+      </header>
+
+      <section class="pain-card panel">
+        <div class="pain-top">
+          <div>
+            <div class="pain-label">目前痛苦值</div>
+            <div id="painValue" class="pain-value">360000</div>
+          </div>
+          <div class="pain-dungeon">
+            <strong>副本：痛苦值</strong>
+            <small>怪物：痛苦值</small>
+            <small id="runStatus">未開始</small>
+          </div>
+        </div>
+        <div class="progress" aria-hidden="true"><i id="treeProgress"></i></div>
+        <div class="stats-grid">
+          <div class="stat"><span>下一棵樹</span><strong id="nextTree">3600</strong></div>
+          <div class="stat"><span>森林樹木</span><strong id="treeCount">100</strong></div>
+          <div class="stat"><span>下一寶箱</span><strong id="nextChest">3600</strong></div>
+          <div class="stat"><span>已開寶箱</span><strong id="chestCount">0</strong></div>
+        </div>
+      </section>
+
+      <section class="section panel">
+        <div class="section-head">
+          <h2>累積獎勵</h2>
+          <p class="subtitle">900 點新歌 +1 首；1800 點現金 +5 元；2400 點原神 +5 分；3000 點社群平台 +5 分。</p>
+        </div>
+        <div id="rewardGrid" class="reward-grid"></div>
+        <p id="notice" class="notice"></p>
+      </section>
+
+      <section class="section panel">
+        <div class="section-head">
+          <h2>寶箱紀錄</h2>
+          <p class="subtitle">每新增 3600 點痛苦值自動抽一次：98% 名言金句、1% Tomica 小車、1% 200 元餐點。</p>
+        </div>
+        <div id="chestList" class="chest-list"></div>
+      </section>
+
+      <section id="quoteEditor" class="section panel quote-editor">
+        <div class="section-head">
+          <h2>名言金句</h2>
+          <button id="saveQuotes" type="button">儲存</button>
+        </div>
+        <textarea id="quoteText" spellcheck="false"></textarea>
+      </section>
+
+      <section id="firebaseEditor" class="section panel firebase-editor">
+        <div class="section-head">
+          <h2>Firebase 同步</h2>
+          <div class="hero-actions">
+            <button id="loadCloud" type="button">從雲端載入</button>
+            <button id="saveFirebase" type="button">儲存設定</button>
+          </div>
+        </div>
+        <p class="subtitle">貼上 Firebase Web App config JSON，資料會同步到 Firestore 的 <strong>bossPain</strong> 集合。Firestore 規則需允許目前使用者讀寫。</p>
+        <textarea id="firebaseConfigText" spellcheck="false" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","appId":"..."}'></textarea>
+        <p id="firebaseStatus" class="notice"></p>
+      </section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+    <script>
+      const storageKey = "boss-pain-system-v1";
+      const firebaseConfigStorageKey = "boss-pain-firebase-config-v1";
+      const firebaseClientIdKey = "boss-pain-client-id-v1";
+      const startPain = 360000;
+      const defaultQuotes = [
+        "今天多承受一點，明天就多一點自由。",
+        "累積不是立刻改變命運，而是讓命運慢慢失去反抗能力。",
+        "你沒有停下來，這件事本身就值得被記錄。",
+        "把痛苦變成點數，把點數變成能使用的生活。",
+        "真正的進度，常常安靜到只有自己知道。"
+      ];
+      const rewardDefs = [
+        { key: "songs", label: "聽新歌", unit: "首", threshold: 900, amount: 1 },
+        { key: "cash", label: "可用於娛樂資金", unit: "元", threshold: 1800, amount: 5 },
+        { key: "genshin", label: "原神遊玩時間", unit: "分", threshold: 2400, amount: 5 },
+        { key: "social", label: "社群平台使用時間", unit: "分", threshold: 3000, amount: 5 }
+      ];
+      const els = {
+        painValue: document.querySelector("#painValue"),
+        treeProgress: document.querySelector("#treeProgress"),
+        nextTree: document.querySelector("#nextTree"),
+        treeCount: document.querySelector("#treeCount"),
+        nextChest: document.querySelector("#nextChest"),
+        chestCount: document.querySelector("#chestCount"),
+        rewardGrid: document.querySelector("#rewardGrid"),
+        chestList: document.querySelector("#chestList"),
+        notice: document.querySelector("#notice"),
+        startToggle: document.querySelector("#startToggle"),
+        runStatus: document.querySelector("#runStatus"),
+        quoteToggle: document.querySelector("#quoteToggle"),
+        quoteEditor: document.querySelector("#quoteEditor"),
+        quoteText: document.querySelector("#quoteText"),
+        saveQuotes: document.querySelector("#saveQuotes"),
+        firebaseToggle: document.querySelector("#firebaseToggle"),
+        firebaseEditor: document.querySelector("#firebaseEditor"),
+        firebaseConfigText: document.querySelector("#firebaseConfigText"),
+        firebaseStatus: document.querySelector("#firebaseStatus"),
+        saveFirebase: document.querySelector("#saveFirebase"),
+        loadCloud: document.querySelector("#loadCloud")
+      };
+
+      function int(value, fallback = 0) {
+        const parsed = Number.parseInt(value, 10);
+        return Number.isFinite(parsed) ? parsed : fallback;
+      }
+
+      function normalizeState(saved = {}) {
+        return {
+          pain: Math.max(startPain, int(saved.pain, startPain)),
+          lastAt: Math.max(0, int(saved.lastAt, Date.now())),
+          running: Boolean(saved.running),
+          spent: {
+            songs: Math.max(0, int(saved.spent?.songs, 0)),
+            cash: Math.max(0, int(saved.spent?.cash, 0)),
+            genshin: Math.max(0, int(saved.spent?.genshin, 0)),
+            social: Math.max(0, int(saved.spent?.social, 0))
+          },
+          quotes: Array.isArray(saved.quotes) && saved.quotes.length ? saved.quotes.map(String) : defaultQuotes,
+          chestLog: Array.isArray(saved.chestLog) ? saved.chestLog.slice(0, 80) : [],
+          lastChestMilestone: Math.max(Math.floor(startPain / 3600), int(saved.lastChestMilestone, Math.floor(startPain / 3600))),
+          updatedAt: Math.max(0, int(saved.updatedAt, 0))
+        };
+      }
+
+      function loadState() {
+        try {
+          return normalizeState(JSON.parse(localStorage.getItem(storageKey) || "{}"));
+        } catch {
+          return normalizeState();
+        }
+      }
+
+      let state = loadState();
+      let firebaseDb = null;
+      let firebaseDoc = null;
+      let firebaseSaveTimer = 0;
+      let lastFirebaseSaveAt = 0;
+
+      function saveState() {
+        state.updatedAt = Date.now();
+        localStorage.setItem(storageKey, JSON.stringify(state));
+        queueFirebaseSave();
+      }
+
+      function firebaseClientId() {
+        let id = localStorage.getItem(firebaseClientIdKey);
+        if (!id) {
+          id = `client-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+          localStorage.setItem(firebaseClientIdKey, id);
+        }
+        return id;
+      }
+
+      function loadFirebaseConfig() {
+        try {
+          return JSON.parse(localStorage.getItem(firebaseConfigStorageKey) || "null");
+        } catch {
+          return null;
+        }
+      }
+
+      function setFirebaseStatus(text) {
+        if (els.firebaseStatus) els.firebaseStatus.textContent = text;
+      }
+
+      function initFirebase() {
+        const config = loadFirebaseConfig();
+        if (!config?.apiKey || !config?.projectId || !config?.appId) {
+          setFirebaseStatus("尚未設定 Firebase config。");
+          return false;
+        }
+        if (typeof firebase === "undefined" || !firebase?.initializeApp || !firebase?.firestore) {
+          setFirebaseStatus("Firebase SDK 尚未載入，請確認網路連線後重開頁面。");
+          return false;
+        }
+        try {
+          const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(config);
+          firebaseDb = firebase.firestore(app);
+          firebaseDoc = firebaseDb.collection("bossPain").doc(firebaseClientId());
+          setFirebaseStatus(`Firebase 已連線：${config.projectId}`);
+          return true;
+        } catch (error) {
+          setFirebaseStatus(`Firebase 連線失敗：${error.message}`);
+          return false;
+        }
+      }
+
+      function queueFirebaseSave(force = false) {
+        if (!firebaseDoc && !initFirebase()) return;
+        window.clearTimeout(firebaseSaveTimer);
+        const wait = force ? 0 : Math.max(1000, 5000 - (Date.now() - lastFirebaseSaveAt));
+        firebaseSaveTimer = window.setTimeout(() => pushFirebaseState(), wait);
+      }
+
+      async function pushFirebaseState() {
+        if (!firebaseDoc && !initFirebase()) return;
+        try {
+          lastFirebaseSaveAt = Date.now();
+          await firebaseDoc.set({
+            state,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            localUpdatedAt: state.updatedAt || Date.now()
+          }, { merge: true });
+          setFirebaseStatus("已同步到 Firebase。");
+        } catch (error) {
+          setFirebaseStatus(`Firebase 同步失敗：${error.message}`);
+        }
+      }
+
+      async function loadFirebaseState() {
+        if (!firebaseDoc && !initFirebase()) return;
+        try {
+          const snap = await firebaseDoc.get();
+          if (!snap.exists || !snap.data()?.state) {
+            setFirebaseStatus("雲端目前沒有資料。");
+            return;
+          }
+          const remote = normalizeState(snap.data().state);
+          state = remote;
+          localStorage.setItem(storageKey, JSON.stringify(state));
+          setFirebaseStatus("已從 Firebase 載入。");
+          render();
+        } catch (error) {
+          setFirebaseStatus(`Firebase 載入失敗：${error.message}`);
+        }
+      }
+
+      function syncPain() {
+        const now = Date.now();
+        if (!state.running) {
+          state.lastAt = now;
+          return;
+        }
+        if (!state.lastAt || state.lastAt > now) state.lastAt = now;
+        const elapsed = Math.floor((now - state.lastAt) / 1000);
+        if (elapsed > 0) {
+          state.pain += elapsed;
+          state.lastAt += elapsed * 1000;
+          rollChests();
+          saveState();
+        }
+      }
+
+      function earnedReward(def) {
+        return Math.floor(state.pain / def.threshold) * def.amount;
+      }
+
+      function availableReward(def) {
+        return Math.max(0, earnedReward(def) - Math.max(0, int(state.spent[def.key], 0)));
+      }
+
+      function formatNumber(value) {
+        return Math.max(0, int(value, 0)).toLocaleString("zh-Hant");
+      }
+
+      function remainingTo(step) {
+        const mod = state.pain % step;
+        return mod === 0 ? step : step - mod;
+      }
+
+      function rollChests() {
+        const currentMilestone = Math.floor(state.pain / 3600);
+        while (state.lastChestMilestone < currentMilestone) {
+          state.lastChestMilestone += 1;
+          state.chestLog.unshift(createChestDrop(state.lastChestMilestone));
+        }
+        state.chestLog = state.chestLog.slice(0, 80);
+      }
+
+      function createChestDrop(milestone) {
+        const roll = Math.random();
+        const createdAt = new Date().toISOString();
+        if (roll < 0.01) {
+          return { type: "tomica", label: "Tomica 小車", detail: "稀有掉落", milestone, createdAt };
+        }
+        if (roll < 0.02) {
+          return { type: "meal", label: "200 元餐點", detail: "稀有掉落", milestone, createdAt };
+        }
+        const quotes = state.quotes.length ? state.quotes : defaultQuotes;
+        const quote = quotes[Math.floor(Math.random() * quotes.length)];
+        return { type: "quote", label: "名言金句", detail: quote, milestone, createdAt };
+      }
+
+      function renderRewards() {
+        els.rewardGrid.innerHTML = "";
+        rewardDefs.forEach((def) => {
+          const card = document.createElement("article");
+          card.className = "reward";
+          const label = document.createElement("span");
+          label.textContent = def.label;
+          const total = document.createElement("strong");
+          total.textContent = `${formatNumber(availableReward(def))} ${def.unit}`;
+          const rule = document.createElement("span");
+          rule.textContent = `每 ${def.threshold} 點 +${def.amount}${def.unit}`;
+          const controls = document.createElement("div");
+          controls.className = "reward-controls";
+          const input = document.createElement("input");
+          input.type = "number";
+          input.min = "1";
+          input.step = "1";
+          input.inputMode = "numeric";
+          input.placeholder = "提取";
+          input.dataset.spendInput = def.key;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.dataset.spendButton = def.key;
+          button.textContent = "使用";
+          controls.append(input, button);
+          card.append(label, total, rule, controls);
+          els.rewardGrid.append(card);
+        });
+      }
+
+      function renderChests() {
+        els.chestList.innerHTML = "";
+        if (!state.chestLog.length) {
+          const empty = document.createElement("div");
+          empty.className = "chest-item";
+          empty.textContent = "下一次新增 3600 點後會出現寶箱紀錄。";
+          els.chestList.append(empty);
+          return;
+        }
+        state.chestLog.forEach((item) => {
+          const row = document.createElement("div");
+          row.className = "chest-item";
+          row.dataset.rare = String(item.type !== "quote");
+          const meta = document.createElement("span");
+          meta.textContent = `第 ${formatNumber(item.milestone)} 個寶箱｜${new Date(item.createdAt).toLocaleString("zh-Hant")}`;
+          const title = document.createElement("strong");
+          title.textContent = item.label;
+          const detail = document.createElement("p");
+          detail.textContent = item.detail;
+          row.append(meta, title, detail);
+          els.chestList.append(row);
+        });
+      }
+
+      function render() {
+        syncPain();
+        els.painValue.textContent = formatNumber(state.pain);
+        const treeMod = state.pain % 3600;
+        els.treeProgress.style.setProperty("--progress", `${(treeMod / 3600) * 100}%`);
+        els.nextTree.textContent = `${formatNumber(remainingTo(3600))} 點`;
+        els.treeCount.textContent = `${formatNumber(Math.floor(state.pain / 3600))} 棵`;
+        els.nextChest.textContent = `${formatNumber(remainingTo(3600))} 點`;
+        els.chestCount.textContent = `${formatNumber(state.chestLog.length)} 個`;
+        els.startToggle.textContent = state.running ? "暫停" : "開始";
+        els.startToggle.dataset.running = String(state.running);
+        els.runStatus.textContent = state.running ? "計算中：每秒 +1 點" : "未開始：按開始後才會計算";
+        renderRewards();
+        renderChests();
+      }
+
+      function spendReward(key) {
+        syncPain();
+        const def = rewardDefs.find((item) => item.key === key);
+        if (!def) return;
+        const input = document.querySelector(`[data-spend-input="${key}"]`);
+        const requested = Math.max(0, int(input?.value, 0));
+        if (!requested) {
+          input?.focus();
+          return;
+        }
+        const actual = Math.min(requested, availableReward(def));
+        state.spent[key] = Math.max(0, int(state.spent[key], 0)) + actual;
+        if (input) input.value = "";
+        els.notice.textContent = actual > 0 ? `${def.label} 已使用 ${actual}${def.unit}` : `${def.label} 可用數不足`;
+        saveState();
+        render();
+      }
+
+      els.rewardGrid.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-spend-button]");
+        if (!button) return;
+        spendReward(button.dataset.spendButton);
+      });
+
+      els.startToggle.addEventListener("click", () => {
+        syncPain();
+        state.running = !state.running;
+        state.lastAt = Date.now();
+        els.notice.textContent = state.running ? "痛苦值已開始計算" : "痛苦值已暫停";
+        saveState();
+        render();
+      });
+
+      els.quoteToggle.addEventListener("click", () => {
+        const open = els.quoteEditor.dataset.open !== "true";
+        els.quoteEditor.dataset.open = String(open);
+        els.quoteText.value = state.quotes.join("\n");
+        if (open) els.quoteText.focus();
+      });
+
+      els.saveQuotes.addEventListener("click", () => {
+        const quotes = els.quoteText.value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+        state.quotes = quotes.length ? quotes : defaultQuotes;
+        els.notice.textContent = `已儲存 ${state.quotes.length} 句名言金句`;
+        saveState();
+        render();
+      });
+
+      els.firebaseToggle.addEventListener("click", () => {
+        const open = els.firebaseEditor.dataset.open !== "true";
+        els.firebaseEditor.dataset.open = String(open);
+        const config = loadFirebaseConfig();
+        els.firebaseConfigText.value = config ? JSON.stringify(config, null, 2) : "";
+        if (open) {
+          initFirebase();
+          els.firebaseConfigText.focus();
+        }
+      });
+
+      els.saveFirebase.addEventListener("click", () => {
+        try {
+          const config = JSON.parse(els.firebaseConfigText.value || "{}");
+          localStorage.setItem(firebaseConfigStorageKey, JSON.stringify(config));
+          firebaseDb = null;
+          firebaseDoc = null;
+          if (initFirebase()) queueFirebaseSave(true);
+        } catch {
+          setFirebaseStatus("Firebase config 不是有效的 JSON。");
+        }
+      });
+
+      els.loadCloud.addEventListener("click", () => {
+        loadFirebaseState();
+      });
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("service-worker.js").catch(() => {});
+        });
+      }
+
+      if (loadFirebaseConfig()) initFirebase();
+      render();
+      setInterval(render, 1000);
+    </script>
+  </body>
+</html>
