@@ -397,21 +397,34 @@
           <h2>Firebase 同步</h2>
           <div class="hero-actions">
             <button id="loadCloud" type="button">從雲端載入</button>
-            <button id="saveFirebase" type="button">儲存設定</button>
+            <button id="saveFirebase" type="button">存檔上傳</button>
           </div>
         </div>
-        <p class="subtitle">貼上 Firebase Web App config JSON，資料會同步到 Firestore 的 <strong>bossPain</strong> 集合。Firestore 規則需允許目前使用者讀寫。</p>
-        <textarea id="firebaseConfigText" spellcheck="false" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","appId":"..."}'></textarea>
+        <p class="subtitle">登入後按「存檔上傳」會同步到 Firestore 的 <strong>bossPain/{uid}</strong>。Firebase 已內建設定。</p>
+        <div class="stats-grid">
+          <input id="firebaseEmail" type="email" autocomplete="username" placeholder="Email">
+          <input id="firebasePassword" type="password" autocomplete="current-password" placeholder="Password">
+          <button id="firebaseLogin" type="button">登入</button>
+          <button id="firebaseLogout" type="button">登出</button>
+        </div>
         <p id="firebaseStatus" class="notice"></p>
       </section>
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
     <script>
       const storageKey = "boss-pain-system-v1";
-      const firebaseConfigStorageKey = "boss-pain-firebase-config-v1";
-      const firebaseClientIdKey = "boss-pain-client-id-v1";
+      const firebaseEmailStorageKey = "boss-pain-firebase-email-v1";
+      const firebaseConfig = {
+        apiKey: "AIzaSyDx-VmGCabZsSkWwipuwGgz-jECl7JyWQE",
+        authDomain: "boss-9fb7e.firebaseapp.com",
+        projectId: "boss-9fb7e",
+        storageBucket: "boss-9fb7e.firebasestorage.app",
+        messagingSenderId: "369809083802",
+        appId: "1:369809083802:web:2cca656e4ba52dc1427e23"
+      };
       const startPain = 360000;
       const defaultQuotes = [
         "今天多承受一點，明天就多一點自由。",
@@ -444,7 +457,10 @@
         saveQuotes: document.querySelector("#saveQuotes"),
         firebaseToggle: document.querySelector("#firebaseToggle"),
         firebaseEditor: document.querySelector("#firebaseEditor"),
-        firebaseConfigText: document.querySelector("#firebaseConfigText"),
+        firebaseEmail: document.querySelector("#firebaseEmail"),
+        firebasePassword: document.querySelector("#firebasePassword"),
+        firebaseLogin: document.querySelector("#firebaseLogin"),
+        firebaseLogout: document.querySelector("#firebaseLogout"),
         firebaseStatus: document.querySelector("#firebaseStatus"),
         saveFirebase: document.querySelector("#saveFirebase"),
         loadCloud: document.querySelector("#loadCloud")
@@ -484,6 +500,9 @@
       let state = loadState();
       let firebaseDb = null;
       let firebaseDoc = null;
+      let firebaseAuth = null;
+      let firebaseUser = null;
+      let firebaseAuthUnsubscribe = null;
       let firebaseSaveTimer = 0;
       let lastFirebaseSaveAt = 0;
 
@@ -493,25 +512,17 @@
         queueFirebaseSave();
       }
 
-      function firebaseClientId() {
-        let id = localStorage.getItem(firebaseClientIdKey);
-        if (!id) {
-          id = `client-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-          localStorage.setItem(firebaseClientIdKey, id);
-        }
-        return id;
-      }
-
       function loadFirebaseConfig() {
-        try {
-          return JSON.parse(localStorage.getItem(firebaseConfigStorageKey) || "null");
-        } catch {
-          return null;
-        }
+        return firebaseConfig;
       }
 
       function setFirebaseStatus(text) {
         if (els.firebaseStatus) els.firebaseStatus.textContent = text;
+      }
+
+      function setFirebaseDocForUser(user) {
+        firebaseUser = user || null;
+        firebaseDoc = firebaseDb && firebaseUser ? firebaseDb.collection("bossPain").doc(firebaseUser.uid) : null;
       }
 
       function initFirebase() {
@@ -520,15 +531,16 @@
           setFirebaseStatus("尚未設定 Firebase config。");
           return false;
         }
-        if (typeof firebase === "undefined" || !firebase?.initializeApp || !firebase?.firestore) {
+        if (typeof firebase === "undefined" || !firebase?.initializeApp || !firebase?.firestore || !firebase?.auth) {
           setFirebaseStatus("Firebase SDK 尚未載入，請確認網路連線後重開頁面。");
           return false;
         }
         try {
           const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(config);
           firebaseDb = firebase.firestore(app);
-          firebaseDoc = firebaseDb.collection("bossPain").doc(firebaseClientId());
-          setFirebaseStatus(`Firebase 已連線：${config.projectId}`);
+          firebaseAuth = firebase.auth(app);
+          setFirebaseDocForUser(firebaseAuth.currentUser);
+          setFirebaseStatus(firebaseUser ? `已登入：${firebaseUser.email}` : `Firebase 已設定：${config.projectId}，請登入後同步。`);
           return true;
         } catch (error) {
           setFirebaseStatus(`Firebase 連線失敗：${error.message}`);
@@ -537,20 +549,25 @@
       }
 
       function queueFirebaseSave(force = false) {
-        if (!firebaseDoc && !initFirebase()) return;
+        if ((!firebaseDb && !initFirebase()) || !firebaseUser || !firebaseDoc) return;
         window.clearTimeout(firebaseSaveTimer);
         const wait = force ? 0 : Math.max(1000, 5000 - (Date.now() - lastFirebaseSaveAt));
         firebaseSaveTimer = window.setTimeout(() => pushFirebaseState(), wait);
       }
 
       async function pushFirebaseState() {
-        if (!firebaseDoc && !initFirebase()) return;
+        if ((!firebaseDb && !initFirebase()) || !firebaseUser || !firebaseDoc) {
+          setFirebaseStatus("請先登入，登入後才能同步資料。");
+          return;
+        }
         try {
           lastFirebaseSaveAt = Date.now();
           await firebaseDoc.set({
             state,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            localUpdatedAt: state.updatedAt || Date.now()
+            localUpdatedAt: state.updatedAt || Date.now(),
+            ownerUid: firebaseUser.uid,
+            ownerEmail: firebaseUser.email || ""
           }, { merge: true });
           setFirebaseStatus("已同步到 Firebase。");
         } catch (error) {
@@ -559,7 +576,10 @@
       }
 
       async function loadFirebaseState() {
-        if (!firebaseDoc && !initFirebase()) return;
+        if ((!firebaseDb && !initFirebase()) || !firebaseUser || !firebaseDoc) {
+          setFirebaseStatus("請先登入，登入後才能從雲端載入。");
+          return;
+        }
         try {
           const snap = await firebaseDoc.get();
           if (!snap.exists || !snap.data()?.state) {
@@ -573,6 +593,49 @@
           render();
         } catch (error) {
           setFirebaseStatus(`Firebase 載入失敗：${error.message}`);
+        }
+      }
+
+      function watchFirebaseAuth() {
+        if (!firebaseAuth) return;
+        if (firebaseAuthUnsubscribe) firebaseAuthUnsubscribe();
+        firebaseAuthUnsubscribe = firebaseAuth.onAuthStateChanged((user) => {
+          setFirebaseDocForUser(user);
+          if (user) {
+            localStorage.setItem(firebaseEmailStorageKey, user.email || "");
+            els.firebaseEmail.value = user.email || "";
+            els.firebasePassword.value = "";
+            setFirebaseStatus(`已登入：${user.email || user.uid}。按「存檔上傳」後會寫入雲端，之後變更會自動同步。`);
+          } else {
+            setFirebaseStatus("尚未登入，登入後才能同步資料。");
+          }
+        });
+      }
+
+      async function loginFirebase() {
+        if (!initFirebase()) return;
+        const email = els.firebaseEmail.value.trim();
+        const password = els.firebasePassword.value;
+        if (!email || !password) {
+          setFirebaseStatus("請輸入 Email 和 Password。");
+          return;
+        }
+        try {
+          await firebaseAuth.signInWithEmailAndPassword(email, password);
+        } catch (error) {
+          setFirebaseStatus(`登入失敗：${error.message}`);
+        }
+      }
+
+      async function logoutFirebase() {
+        if (!firebaseAuth && !initFirebase()) return;
+        try {
+          await firebaseAuth.signOut();
+          firebaseUser = null;
+          firebaseDoc = null;
+          setFirebaseStatus("已登出。");
+        } catch (error) {
+          setFirebaseStatus(`登出失敗：${error.message}`);
         }
       }
 
@@ -698,7 +761,9 @@
         els.startToggle.textContent = state.running ? "暫停" : "開始";
         els.startToggle.dataset.running = String(state.running);
         els.runStatus.textContent = state.running ? "計算中：每秒 +1 點" : "未開始：按開始後才會計算";
-        renderRewards();
+        if (!document.activeElement?.matches("[data-spend-input]")) {
+          renderRewards();
+        }
         renderChests();
       }
 
@@ -753,25 +818,41 @@
       els.firebaseToggle.addEventListener("click", () => {
         const open = els.firebaseEditor.dataset.open !== "true";
         els.firebaseEditor.dataset.open = String(open);
-        const config = loadFirebaseConfig();
-        els.firebaseConfigText.value = config ? JSON.stringify(config, null, 2) : "";
+        els.firebaseEmail.value = localStorage.getItem(firebaseEmailStorageKey) || "";
         if (open) {
           initFirebase();
-          els.firebaseConfigText.focus();
+          if (firebaseAuth) watchFirebaseAuth();
+          els.firebaseEmail.focus();
         }
       });
 
-      els.saveFirebase.addEventListener("click", () => {
+      els.saveFirebase.addEventListener("click", async () => {
         try {
-          const config = JSON.parse(els.firebaseConfigText.value || "{}");
-          localStorage.setItem(firebaseConfigStorageKey, JSON.stringify(config));
+          const config = loadFirebaseConfig();
+          if (!config?.apiKey || !config?.projectId || !config?.appId) {
+            setFirebaseStatus("Firebase 內建設定不完整。");
+            return;
+          }
+          localStorage.setItem(firebaseEmailStorageKey, els.firebaseEmail.value.trim());
           firebaseDb = null;
           firebaseDoc = null;
-          if (initFirebase()) queueFirebaseSave(true);
+          firebaseAuth = null;
+          if (initFirebase()) {
+            watchFirebaseAuth();
+            if (firebaseUser) {
+              await pushFirebaseState();
+              setFirebaseStatus("已存檔並上傳到 Firebase，之後變更會自動同步。");
+            } else {
+              setFirebaseStatus("請先登入再按「存檔上傳」。");
+            }
+          }
         } catch {
-          setFirebaseStatus("Firebase config 不是有效的 JSON。");
+          setFirebaseStatus("存檔上傳失敗。");
         }
       });
+
+      els.firebaseLogin.addEventListener("click", loginFirebase);
+      els.firebaseLogout.addEventListener("click", logoutFirebase);
 
       els.loadCloud.addEventListener("click", () => {
         loadFirebaseState();
@@ -783,7 +864,10 @@
         });
       }
 
-      if (loadFirebaseConfig()) initFirebase();
+      if (initFirebase()) {
+        els.firebaseEmail.value = localStorage.getItem(firebaseEmailStorageKey) || "";
+        watchFirebaseAuth();
+      }
       render();
       setInterval(render, 1000);
     </script>
