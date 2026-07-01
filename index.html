@@ -606,6 +606,27 @@
         }
       }
 
+      async function refreshFirebaseSummary() {
+        if ((!firebaseDb && !initFirebase()) || !firebaseUser || !firebaseDoc) return;
+        try {
+          const snap = await firebaseDoc.get();
+          if (!snap.exists) {
+            setFirebaseStatus(`已登入：${firebaseUser.email || firebaseUser.uid}。雲端目前沒有資料。`);
+            return;
+          }
+          const data = snap.data() || {};
+          const savedAt = data.localUpdatedAt ? new Date(data.localUpdatedAt).toLocaleString("zh-TW", {
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+          }) : "時間未知";
+          setFirebaseStatus(`已登入：${firebaseUser.email || firebaseUser.uid}。上次存檔：${data.lastSavedDevice || "未知端"}，${savedAt}。`);
+        } catch (error) {
+          setFirebaseStatus(`已登入，但讀取上次存檔失敗：${error.message}`);
+        }
+      }
+
       function watchFirebaseAuth() {
         if (!firebaseAuth) return;
         if (firebaseAuthUnsubscribe) firebaseAuthUnsubscribe();
@@ -615,7 +636,7 @@
             localStorage.setItem(firebaseEmailStorageKey, user.email || "");
             els.firebaseEmail.value = user.email || "";
             els.firebasePassword.value = "";
-            setFirebaseStatus(`已登入：${user.email || user.uid}。按「存檔上傳」後會寫入雲端，之後變更會自動同步。`);
+            refreshFirebaseSummary();
           } else {
             setFirebaseStatus("尚未登入，登入後才能同步資料。");
           }
