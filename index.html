@@ -520,6 +520,14 @@
         if (els.firebaseStatus) els.firebaseStatus.textContent = text;
       }
 
+      function deviceLabel() {
+        const ua = navigator.userAgent || "";
+        const isIPad = /iPad/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+        if (isIPad) return "iPad端";
+        if (/Mobi|Android|iPhone|iPod/i.test(ua)) return "手機端";
+        return "電腦端";
+      }
+
       function setFirebaseDocForUser(user) {
         firebaseUser = user || null;
         firebaseDoc = firebaseDb && firebaseUser ? firebaseDb.collection("bossPain").doc(firebaseUser.uid) : null;
@@ -566,10 +574,11 @@
             state,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
             localUpdatedAt: state.updatedAt || Date.now(),
+            lastSavedDevice: deviceLabel(),
             ownerUid: firebaseUser.uid,
             ownerEmail: firebaseUser.email || ""
           }, { merge: true });
-          setFirebaseStatus("已同步到 Firebase。");
+          setFirebaseStatus(`已同步到 Firebase。上次存檔：${deviceLabel()}`);
         } catch (error) {
           setFirebaseStatus(`Firebase 同步失敗：${error.message}`);
         }
@@ -586,10 +595,11 @@
             setFirebaseStatus("雲端目前沒有資料。");
             return;
           }
-          const remote = normalizeState(snap.data().state);
+          const data = snap.data();
+          const remote = normalizeState(data.state);
           state = remote;
           localStorage.setItem(storageKey, JSON.stringify(state));
-          setFirebaseStatus("已從 Firebase 載入。");
+          setFirebaseStatus(`已從 Firebase 載入。上次存檔：${data.lastSavedDevice || "未知端"}`);
           render();
         } catch (error) {
           setFirebaseStatus(`Firebase 載入失敗：${error.message}`);
@@ -841,7 +851,7 @@
             watchFirebaseAuth();
             if (firebaseUser) {
               await pushFirebaseState();
-              setFirebaseStatus("已存檔並上傳到 Firebase，之後變更會自動同步。");
+              setFirebaseStatus(`已存檔並上傳到 Firebase，之後變更會自動同步。上次存檔：${deviceLabel()}`);
             } else {
               setFirebaseStatus("請先登入再按「存檔上傳」。");
             }
